@@ -1,0 +1,26 @@
+{
+  "default": {
+    "voice": "Tingting (中文（中国大陆）)",
+    "rate": 180
+  },
+  "Penny": {
+    "voice": "Tingting (中文（中国大陆）)",
+    "rate": 165
+  },
+  "Abigail": {
+    "voice": "Flo (中文（中国大陆）)",
+    "rate": 185
+  },
+  "Sebastian": {
+    "voice": "Reed (中文（中国大陆）)",
+    "rate": 170
+  },
+  "Lewis": {
+    "voice": "Grandpa (中文（中国大陆）)",
+    "rate": 165
+  },
+  "QuestNarrator": {
+    "voice": "Tingting (中文（中国大陆）)",
+    "rate": 165
+  }
+}

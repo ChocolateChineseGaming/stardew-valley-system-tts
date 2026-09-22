@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net6.0</TargetFramework><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings><UseSharedCompilation>false</UseSharedCompilation></PropertyGroup>
+  <ItemGroup><Compile Include="../../src/SystemVoice/VoiceKey.cs" Link="VoiceKey.cs" /><Compile Include="../../src/SystemVoice/Narration.cs" Link="Narration.cs" /><Compile Include="../../src/SystemVoice/LetterSender.cs" Link="LetterSender.cs" /><Compile Include="../../src/SystemVoice/TvShow.cs" Link="TvShow.cs" /><Compile Include="../../src/SystemVoice/SpeechCache.cs" Link="SpeechCache.cs" /><Compile Include="../../src/SystemVoice/MacAudioPlayer.cs" Link="MacAudioPlayer.cs" /></ItemGroup>
+</Project>
