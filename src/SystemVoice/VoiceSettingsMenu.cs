@@ -9,12 +9,15 @@ namespace MandarinVoice;
 internal sealed class VoiceSettingsMenu : IClickableMenu
 {
     private readonly ModConfig config;
+    private readonly IReadOnlyList<string> voices;
     private readonly Action save;
     private int page;
     private readonly Rectangle learningTab;
     private readonly Rectangle contentTab;
     private readonly Rectangle slower;
     private readonly Rectangle faster;
+    private readonly Rectangle previousVoice;
+    private readonly Rectangle nextVoice;
     private readonly Rectangle speechSlower;
     private readonly Rectangle speechFaster;
     private readonly Rectangle quieter;
@@ -22,24 +25,29 @@ internal sealed class VoiceSettingsMenu : IClickableMenu
     private readonly Rectangle quests;
     private readonly Rectangle letters;
     private readonly Rectangle television;
+    private readonly Rectangle npcVoices;
 
-    public VoiceSettingsMenu(ModConfig config, Action save)
+    public VoiceSettingsMenu(ModConfig config, IReadOnlyList<string> voices, Action save)
         : base(Game1.uiViewport.Width / 2 - 360, Game1.uiViewport.Height / 2 - 240,
             720, 480, showUpperRightCloseButton: true)
     {
         this.config = config;
+        this.voices = voices.Count > 0 ? voices : new[] { config.FallbackVoice };
         this.save = save;
         learningTab = new Rectangle(xPositionOnScreen + 100, yPositionOnScreen + 52, 220, 52);
         contentTab = new Rectangle(xPositionOnScreen + 336, yPositionOnScreen + 52, 220, 52);
-        slower = new Rectangle(xPositionOnScreen + 290, yPositionOnScreen + 140, 54, 48);
-        faster = new Rectangle(xPositionOnScreen + 500, yPositionOnScreen + 140, 54, 48);
-        speechSlower = new Rectangle(xPositionOnScreen + 290, yPositionOnScreen + 214, 54, 48);
-        speechFaster = new Rectangle(xPositionOnScreen + 500, yPositionOnScreen + 214, 54, 48);
-        quieter = new Rectangle(xPositionOnScreen + 290, yPositionOnScreen + 288, 54, 48);
-        louder = new Rectangle(xPositionOnScreen + 500, yPositionOnScreen + 288, 54, 48);
+        previousVoice = new Rectangle(xPositionOnScreen + 290, yPositionOnScreen + 126, 54, 48);
+        nextVoice = new Rectangle(xPositionOnScreen + 500, yPositionOnScreen + 126, 54, 48);
+        slower = new Rectangle(xPositionOnScreen + 290, yPositionOnScreen + 188, 54, 48);
+        faster = new Rectangle(xPositionOnScreen + 500, yPositionOnScreen + 188, 54, 48);
+        speechSlower = new Rectangle(xPositionOnScreen + 290, yPositionOnScreen + 250, 54, 48);
+        speechFaster = new Rectangle(xPositionOnScreen + 500, yPositionOnScreen + 250, 54, 48);
+        quieter = new Rectangle(xPositionOnScreen + 290, yPositionOnScreen + 312, 54, 48);
+        louder = new Rectangle(xPositionOnScreen + 500, yPositionOnScreen + 312, 54, 48);
         quests = new Rectangle(xPositionOnScreen + 84, yPositionOnScreen + 142, 552, 52);
         letters = new Rectangle(xPositionOnScreen + 84, yPositionOnScreen + 212, 552, 52);
         television = new Rectangle(xPositionOnScreen + 84, yPositionOnScreen + 282, 552, 52);
+        npcVoices = new Rectangle(xPositionOnScreen + 84, yPositionOnScreen + 352, 552, 52);
     }
 
     public override void receiveLeftClick(int x, int y, bool playSound = true)
@@ -48,7 +56,9 @@ internal sealed class VoiceSettingsMenu : IClickableMenu
         if (contentTab.Contains(x, y)) { page = 1; Click(); return; }
         if (page == 0)
         {
-            if (slower.Contains(x, y)) SetPlaybackRate(config.PlaybackRate - 0.05f);
+            if (previousVoice.Contains(x, y)) SelectVoice(-1);
+            else if (nextVoice.Contains(x, y)) SelectVoice(1);
+            else if (slower.Contains(x, y)) SetPlaybackRate(config.PlaybackRate - 0.05f);
             else if (faster.Contains(x, y)) SetPlaybackRate(config.PlaybackRate + 0.05f);
             else if (speechSlower.Contains(x, y)) SetSpeechRate(config.SpeechRate - 10);
             else if (speechFaster.Contains(x, y)) SetSpeechRate(config.SpeechRate + 10);
@@ -61,6 +71,8 @@ internal sealed class VoiceSettingsMenu : IClickableMenu
         else if (letters.Contains(x, y)) Toggle(() => config.ReadLetters = !config.ReadLetters);
         else if (television.Contains(x, y))
             Toggle(() => config.ReadNonNpcDialogue = !config.ReadNonNpcDialogue);
+        else if (npcVoices.Contains(x, y))
+            Toggle(() => config.UseNpcVoices = !config.UseNpcVoices);
         else base.receiveLeftClick(x, y, playSound);
     }
 
@@ -79,6 +91,22 @@ internal sealed class VoiceSettingsMenu : IClickableMenu
     private void SetPlaybackRate(float value)
     {
         config.PlaybackRate = MathF.Round(Math.Clamp(value, 0.7f, 1.15f), 2);
+        SaveClick();
+    }
+
+    private void SelectVoice(int offset)
+    {
+        int index = -1;
+        for (int i = 0; i < voices.Count; i++)
+        {
+            if (string.Equals(voices[i], config.FallbackVoice, StringComparison.Ordinal))
+            {
+                index = i;
+                break;
+            }
+        }
+        if (index < 0) index = offset > 0 ? -1 : 0;
+        config.FallbackVoice = voices[(index + offset + voices.Count) % voices.Count];
         SaveClick();
     }
 
@@ -125,23 +153,29 @@ internal sealed class VoiceSettingsMenu : IClickableMenu
 
     private void DrawLearningPage(SpriteBatch b)
     {
-        DrawText(b, "播放速度", xPositionOnScreen + 84, yPositionOnScreen + 148);
+        DrawText(b, "朗读声音", xPositionOnScreen + 84, yPositionOnScreen + 134);
+        DrawButton(b, previousVoice, "‹");
+        DrawCenteredText(b, SystemVoiceCatalog.ShortName(config.FallbackVoice), previousVoice.Right,
+            nextVoice.Left, yPositionOnScreen + 134, Color.DarkSlateBlue);
+        DrawButton(b, nextVoice, "›");
+        DrawText(b, "播放速度", xPositionOnScreen + 84, yPositionOnScreen + 196);
         DrawButton(b, slower, "－");
-        DrawText(b, $"{config.PlaybackRate:0.00}×", xPositionOnScreen + 390,
-            yPositionOnScreen + 148, Color.DarkSlateBlue);
+        DrawCenteredText(b, $"{config.PlaybackRate:0.00}×", slower.Right, faster.Left,
+            yPositionOnScreen + 196, Color.DarkSlateBlue);
         DrawButton(b, faster, "＋");
-        DrawText(b, "系统语速", xPositionOnScreen + 84, yPositionOnScreen + 222);
+        DrawText(b, "系统语速", xPositionOnScreen + 84, yPositionOnScreen + 258);
         DrawButton(b, speechSlower, "－");
-        DrawText(b, config.SpeechRate.ToString(), xPositionOnScreen + 402,
-            yPositionOnScreen + 222, Color.DarkSlateBlue);
+        DrawCenteredText(b, config.SpeechRate.ToString(), speechSlower.Right,
+            speechFaster.Left, yPositionOnScreen + 258, Color.DarkSlateBlue);
         DrawButton(b, speechFaster, "＋");
-        DrawText(b, "总音量", xPositionOnScreen + 84, yPositionOnScreen + 296);
+        DrawText(b, "总音量", xPositionOnScreen + 84, yPositionOnScreen + 320);
         DrawButton(b, quieter, "－");
-        DrawText(b, $"{config.Volume:P0}", xPositionOnScreen + 398,
-            yPositionOnScreen + 296, Color.DarkSlateBlue);
+        DrawCenteredText(b, $"{config.Volume:P0}", quieter.Right, louder.Left,
+            yPositionOnScreen + 320, Color.DarkSlateBlue);
         DrawButton(b, louder, "＋");
-        DrawText(b, $"默认声音：{config.FallbackVoice}", xPositionOnScreen + 84,
-            yPositionOnScreen + 370, Color.SaddleBrown, Game1.smallFont);
+        DrawText(b, $"已发现 {voices.Count} 个普通话声音；左右切换后关闭页面，再按 F8 试听。",
+            xPositionOnScreen + 84, yPositionOnScreen + 382, Color.SaddleBrown,
+            Game1.smallFont);
     }
 
     private void DrawContentPage(SpriteBatch b)
@@ -149,9 +183,17 @@ internal sealed class VoiceSettingsMenu : IClickableMenu
         DrawToggle(b, quests, "朗读任务文本", config.ReadQuestText);
         DrawToggle(b, letters, "朗读信件", config.ReadLetters);
         DrawToggle(b, television, "朗读电视节目和无角色对白", config.ReadNonNpcDialogue);
-        DrawText(b, "朗读始终由 F8 手动触发；设置会立即保存。",
-            xPositionOnScreen + 84, yPositionOnScreen + 376, Color.SaddleBrown,
+        DrawToggle(b, npcVoices, "按角色使用 config.json 中的专属声音", config.UseNpcVoices);
+        DrawText(b, "关闭角色专属声音后，所有文本都使用声音设置页中的选择。",
+            xPositionOnScreen + 84, yPositionOnScreen + 414, Color.SaddleBrown,
             Game1.smallFont);
+    }
+
+    private static void DrawCenteredText(SpriteBatch b, string text, int left, int right,
+        int y, Color color)
+    {
+        Vector2 size = Game1.smallFont.MeasureString(text);
+        DrawText(b, text, left + (right - left - (int)size.X) / 2, y, color);
     }
 
     private static void DrawText(SpriteBatch b, string text, int x, int y,

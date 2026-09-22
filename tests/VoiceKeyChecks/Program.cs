@@ -1,4 +1,14 @@
 using MandarinVoice;
+var discovered = SystemVoiceCatalog.Parse(
+    "Eddy (中文（中国大陆）)     zh_CN    # 你好！\n" +
+    "Tingting            zh_CN    # 你好！\n" +
+    "Samantha            en_US    # Hello!\n", "zh_CN");
+if (discovered.Count != 2 || discovered[0] != "Eddy (中文（中国大陆）)"
+    || discovered[1] != "Tingting")
+    throw new Exception("macOS Mandarin voice parsing failed");
+if (SystemVoiceCatalog.Resolve(discovered, "Tingting (中文（中国大陆）)") != "Tingting"
+    || SystemVoiceCatalog.Resolve(discovered, "missing") is not null)
+    throw new Exception("macOS voice name resolution failed");
 if (VoiceKey.For("Penny", "今天天气真不错。") != "bd00aabe9b556f1d2c384aad9a88c2b76a1e9c181982e1b6af3fe050f1a97a4f") throw new Exception("Python/C# key mismatch");
 if (VoiceKey.For("Penny", "  你好\n 世界。 ") != "fe10a6e624e7923da913bb27c3100f8fe9df89e0334f0a283abf430263b7b6bf") throw new Exception("Python/C# key mismatch");
 if (VoiceKey.For("Abigail", "é") != "a2e72e06f93e8987c664b2117b0710641b03b8d8740b6eeb91c3d45cc10cdada") throw new Exception("Python/C# key mismatch");
@@ -102,7 +112,7 @@ try
     {
         using var player = new MacAudioPlayer();
         string destination = Path.Combine(work, "cached.wav");
-        player.GenerateAndPlay("你好，这是手动朗读测试。", "Tingting (中文（中国大陆）)", 175, destination, 0f, 0.85f);
+        player.GenerateAndPlay("你好，这是手动朗读测试。", "Tingting", 175, destination, 0f, 0.85f);
         var timer = System.Diagnostics.Stopwatch.StartNew();
         int? result = null;
         while (timer.Elapsed < TimeSpan.FromSeconds(30) && result is null)
@@ -114,7 +124,7 @@ try
             throw new Exception("macOS local generation/cache/playback failed");
         string cancelled = Path.Combine(work, "cancelled.wav");
         player.GenerateAndPlay(string.Concat(Enumerable.Repeat("这段内容已经取消。", 100)),
-            "Tingting (中文（中国大陆）)", 175, cancelled, 0f, 0.85f);
+            "Tingting", 175, cancelled, 0f, 0.85f);
         player.Stop();
         Thread.Sleep(200);
         if (player.Reap() is not null || File.Exists(cancelled)) throw new Exception("Cancelled generation was played or cached");

@@ -9,11 +9,12 @@ namespace MandarinVoice;
 
 public sealed class ModEntry : Mod
 {
-    private const string ModVersion = "0.1.0";
+    private const string ModVersion = "0.2.0";
     private ModConfig config = new();
     private readonly MacAudioPlayer audio = new();
     private readonly HashSet<string> missing = new();
     private readonly NarrationSession session = new();
+    private IReadOnlyList<string> systemVoices = Array.Empty<string>();
     private QuestTextReader quests = null!;
     private AdditionalTextReader additional = null!;
     private bool questReaderFailed;
@@ -31,6 +32,7 @@ public sealed class ModEntry : Mod
         quests = new QuestTextReader(helper);
         additional = new AdditionalTextReader(helper);
         config = helper.ReadConfig<ModConfig>();
+        RefreshSystemVoices();
         RepairConfig();
 
         helper.Events.GameLoop.UpdateTicked += OnUpdate;
@@ -43,6 +45,7 @@ public sealed class ModEntry : Mod
         helper.ConsoleCommands.Add("system_voice_reload", "重新读取系统配音配置。", (_, _) =>
         {
             config = helper.ReadConfig<ModConfig>();
+            RefreshSystemVoices();
             RepairConfig();
             failed = false;
             questReaderFailed = false;
@@ -50,7 +53,7 @@ public sealed class ModEntry : Mod
             Reset();
         });
         helper.ConsoleCommands.Add("system_voice_status", "显示系统配音状态。", (_, _) =>
-            Notify($"系统 TTS 已{(config.Enabled ? "启用" : "停用")}；声音：{config.FallbackVoice}。",
+            Notify($"系统 TTS 已{(config.Enabled ? "启用" : "停用")}；声音：{config.FallbackVoice}；已发现 {systemVoices.Count} 个普通话声音。",
                 LogLevel.Info));
         helper.ConsoleCommands.Add("system_voice_config", "打开系统配音设置。", (_, _) =>
             OpenSettings());
@@ -58,12 +61,33 @@ public sealed class ModEntry : Mod
         AppDomain.CurrentDomain.ProcessExit += (_, _) => audio.Dispose();
     }
 
+    private void RefreshSystemVoices()
+    {
+        try
+        {
+            systemVoices = SystemVoiceCatalog.DiscoverMandarinVoices();
+            if (systemVoices.Count == 0)
+                Monitor.Log("macOS 没有已安装的普通话声音；请在系统设置中下载。", LogLevel.Warn);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            systemVoices = Array.Empty<string>();
+            Monitor.Log($"无法读取 macOS 普通话声音列表：{ex.Message}", LogLevel.Warn);
+        }
+    }
+
     private void RepairConfig()
     {
         bool changed = false;
         if (string.IsNullOrWhiteSpace(config.FallbackVoice))
         {
-            config.FallbackVoice = "Tingting (中文（中国大陆）)";
+            config.FallbackVoice = "Tingting";
+            changed = true;
+        }
+        string? installedFallback = SystemVoiceCatalog.Resolve(systemVoices, config.FallbackVoice);
+        if (installedFallback is not null && installedFallback != config.FallbackVoice)
+        {
+            config.FallbackVoice = installedFallback;
             changed = true;
         }
         int speechRate = Math.Clamp(config.SpeechRate, 80, 350);
@@ -82,6 +106,17 @@ public sealed class ModEntry : Mod
         {
             config.NpcVoices = new();
             changed = true;
+        }
+        else
+        {
+            foreach (string speaker in config.NpcVoices.Keys.ToArray())
+            {
+                string? installed = SystemVoiceCatalog.Resolve(systemVoices,
+                    config.NpcVoices[speaker]);
+                if (installed is null || installed == config.NpcVoices[speaker]) continue;
+                config.NpcVoices[speaker] = installed;
+                changed = true;
+            }
         }
         if (config.NpcVolume is null)
         {
@@ -112,7 +147,7 @@ public sealed class ModEntry : Mod
             return;
         }
         Reset();
-        Game1.activeClickableMenu = new VoiceSettingsMenu(config, SaveSettings);
+        Game1.activeClickableMenu = new VoiceSettingsMenu(config, systemVoices, SaveSettings);
     }
 
     private void Notify(string message, LogLevel level = LogLevel.Info)
@@ -275,8 +310,9 @@ public sealed class ModEntry : Mod
             }
 
             CaptureMissing(line, key);
-            string voice = config.NpcVoices.GetValueOrDefault(line.Speaker)
-                ?? config.FallbackVoice;
+            string voice = config.UseNpcVoices
+                ? config.NpcVoices.GetValueOrDefault(line.Speaker) ?? config.FallbackVoice
+                : config.FallbackVoice;
             int rate = Math.Clamp(config.SpeechRate, 80, 350);
             string cached = Path.Combine(Helper.DirectoryPath, "cache",
                 SpeechCache.FileName(line.Speaker, line.Text, voice, rate));

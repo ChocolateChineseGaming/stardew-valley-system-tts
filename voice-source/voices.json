@@ -1,10 +1,10 @@
 {
   "default": {
-    "voice": "Tingting (中文（中国大陆）)",
+    "voice": "Tingting",
     "rate": 180
   },
   "Penny": {
-    "voice": "Tingting (中文（中国大陆）)",
+    "voice": "Tingting",
     "rate": 165
   },
   "Abigail": {
@@ -20,7 +20,7 @@
     "rate": 165
   },
   "QuestNarrator": {
-    "voice": "Tingting (中文（中国大陆）)",
+    "voice": "Tingting",
     "rate": 165
   }
 }

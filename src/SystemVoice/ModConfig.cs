@@ -8,11 +8,12 @@ public sealed class ModConfig
     public bool ReadQuestText { get; set; } = true;
     public bool ReadLetters { get; set; } = true;
     public bool ReadNonNpcDialogue { get; set; } = true;
-    public string FallbackVoice { get; set; } = "Tingting (中文（中国大陆）)";
+    public string FallbackVoice { get; set; } = "Tingting";
+    public bool UseNpcVoices { get; set; } = false;
     public int SpeechRate { get; set; } = 175;
     public Dictionary<string, string> NpcVoices { get; set; } = new()
     {
-        ["Penny"] = "Tingting (中文（中国大陆）)",
+        ["Penny"] = "Tingting",
         ["Abigail"] = "Flo (中文（中国大陆）)",
         ["Sebastian"] = "Reed (中文（中国大陆）)",
         ["Lewis"] = "Grandpa (中文（中国大陆）)"

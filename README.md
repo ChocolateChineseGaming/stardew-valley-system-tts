@@ -2,7 +2,7 @@
 
 这是一个独立的 SMAPI Mod，只使用 macOS 自带的 `say` 和 `afplay`，不包含 Qwen、模型服务或第三方 TTS 依赖。
 
-支持手动朗读 NPC 对白、任务详情、电视节目和信件。打开内容后按 `F8` 开始朗读；再次按 `F8` 会从头重读。按 `F10` 打开设置页，可调整系统合成语速、播放速度、音量和朗读内容。
+支持手动朗读 NPC 对白、任务详情、电视节目和信件。打开内容后按 `F8` 开始朗读；再次按 `F8` 会从头重读。按 `F10` 打开设置页，可直接切换 macOS 已安装的普通话声音，并调整系统合成语速、播放速度、音量和朗读内容。
 
 ## 工作方式
 
@@ -42,10 +42,11 @@ dotnet build src/SystemVoice -c Release \
   "ReadQuestText": true,
   "ReadLetters": true,
   "ReadNonNpcDialogue": true,
-  "FallbackVoice": "Tingting (中文（中国大陆）)",
+  "FallbackVoice": "Tingting",
+  "UseNpcVoices": false,
   "SpeechRate": 175,
   "NpcVoices": {
-    "Penny": "Tingting (中文（中国大陆）)",
+    "Penny": "Tingting",
     "Abigail": "Flo (中文（中国大陆）)"
   },
   "Volume": 1.0,
@@ -57,7 +58,7 @@ dotnet build src/SystemVoice -c Release \
 }
 ```
 
-`FallbackVoice` 是未单独配置角色时使用的声音。`NpcVoices` 可按 NPC 内部英文名指定声音；声音名必须与 `say -v '?'` 的输出一致。声音或 `SpeechRate` 改变后会使用新的缓存键，不会误用旧缓存。
+`FallbackVoice` 是 F10 声音设置页当前选择的声音。默认关闭 `UseNpcVoices`，因此所有内容都使用这个声音；启用后，`NpcVoices` 可按 NPC 内部英文名指定不同声音。声音名必须与 `say -v '?'` 的输出一致。声音或 `SpeechRate` 改变后会使用新的缓存键，不会误用旧缓存。
 
 ## 批量生成语音库
 

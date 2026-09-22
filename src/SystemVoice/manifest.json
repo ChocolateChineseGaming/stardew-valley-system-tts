@@ -1,7 +1,7 @@
 {
   "Name": "Stardew System Mandarin Voice for Mac",
   "Author": "Stardew System Voice contributors",
-  "Version": "0.1.0",
+  "Version": "0.2.0",
   "Description": "使用 macOS 系统 TTS 手动朗读 NPC 对白、任务、电视节目和信件。",
   "UniqueID": "StardewMandarin.SystemVoice",
   "EntryDll": "SystemVoice.dll",
